@@ -1,0 +1,119 @@
+/* Dark theme for markserv, injected by preload.js.
+ *
+ * markserv hardcodes its templates and ships only a GitHub-light stylesheet,
+ * with no flag or config to change either. Rather than patch node_modules —
+ * lost on every `npm -g` upgrade — the shim appends this file to the template
+ * <head>, where it overrides templates/markserv.css and the bundled
+ * highlight-js-github-gist theme.
+ *
+ * Palette is VS Code Dark+, the same values as lua/plugins/markdown.lua, so a
+ * file looks the same in the browser as it does in Neovim. Light mode is left
+ * to markserv's own stylesheet.
+ *
+ * These are bare rules: preload.js wraps them in
+ * `@media (prefers-color-scheme: dark)` unless the theme is forced. */
+
+body {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  /* markserv paints `outline: 1300px solid #fff` around the 978px content
+   * column above 768px wide — a white surround unless it is overridden. */
+  border-color: #3c3c3c;
+  outline-color: #1e1e1e;
+}
+
+.markdown-body {
+  background: #1e1e1e;
+  color: #d4d4d4;
+}
+
+.markdown-body a { color: #4ec9b0; }
+.markdown-body a:visited { color: #c586c0; }
+
+.markdown-body h1,
+.markdown-body h2 {
+  border-bottom-color: #3c3c3c;
+}
+
+.markdown-body h1 { color: #569cd6; }
+.markdown-body h2 { color: #4ec9b0; }
+.markdown-body h3 { color: #dcdcaa; }
+.markdown-body h4 { color: #c586c0; }
+.markdown-body h5 { color: #ce9178; }
+.markdown-body h6 { color: #6a9955; }
+
+.markdown-body hr { background-color: #3c3c3c; }
+
+.markdown-body blockquote {
+  color: #9a9a9a;
+  border-left-color: #4a4a4a;
+}
+
+/* Inline code and fenced blocks. github.less styles these separately. */
+.markdown-body code,
+.markdown-body tt {
+  background-color: #2d2d30;
+  color: #ce9178;
+}
+
+.markdown-body pre {
+  background-color: #252526;
+  color: #d4d4d4;
+}
+
+.markdown-body pre code,
+.markdown-body pre tt {
+  background-color: transparent;
+  color: inherit;
+}
+
+.markdown-body table tr {
+  background-color: #1e1e1e;
+  border-top-color: #3c3c3c;
+}
+
+.markdown-body table tr:nth-child(2n) { background-color: #252526; }
+
+.markdown-body table th,
+.markdown-body table td {
+  border-color: #3c3c3c;
+}
+
+.markdown-body table th { color: #569cd6; }
+
+.markdown-body img { background-color: transparent; }
+
+.markdown-body footer,
+.markdown-body sup { color: #6a6a6a; }
+
+/* Directory index: markserv reuses .markdown-body plus its own icon rows. */
+.markdown-body ul.markserv-dir li { border-color: #3c3c3c; }
+
+/* highlight.js — overrides the github-gist theme the template loads. */
+.hljs { background: #252526; color: #d4d4d4; }
+.hljs-comment,
+.hljs-quote { color: #6a9955; font-style: italic; }
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal { color: #569cd6; }
+.hljs-built_in,
+.hljs-type,
+.hljs-class .hljs-title { color: #4ec9b0; }
+.hljs-string,
+.hljs-regexp,
+.hljs-addition { color: #ce9178; }
+.hljs-number { color: #b5cea8; }
+.hljs-title,
+.hljs-section,
+.hljs-function .hljs-title { color: #dcdcaa; }
+.hljs-variable,
+.hljs-attr,
+.hljs-attribute,
+.hljs-template-variable { color: #9cdcfe; }
+.hljs-symbol,
+.hljs-bullet,
+.hljs-link { color: #d7ba7d; }
+.hljs-meta { color: #c586c0; }
+.hljs-deletion { color: #f44747; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: bold; }

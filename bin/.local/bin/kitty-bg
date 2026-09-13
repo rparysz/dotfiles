@@ -1,0 +1,116 @@
+#!/usr/bin/env bash
+# Switch kitty's background image.
+#
+#   kitty-bg                 list available images and show the current one
+#   kitty-bg mountain        use ~/.config/kitty/wallpapers/mountain.png
+#   kitty-bg Coast           use the largest image from a KDE wallpaper set
+#   kitty-bg ~/pic.png       use an arbitrary file
+#   kitty-bg --add ~/pic.png copy a file into the wallpapers dir, then use it
+#                            (kept at full resolution; --add-small to downscale)
+#   kitty-bg none            remove the background image
+#
+# Images in the wallpapers dir are referenced by RELATIVE path, which kitty
+# resolves against its config dir — so the setting stays portable across
+# machines. Anything else is written as an absolute path.
+set -euo pipefail
+CONF="${KITTY_CONFIG:-$HOME/.config/kitty/kitty.conf}"
+# background_image is machine-local: the wallpapers themselves are not in the
+# repo (large binaries, and downloaded images rarely carry redistribution
+# rights), so the setting lives in local.conf, which kitty.conf includes last.
+LOCALCONF="$(dirname "$CONF")/local.conf"
+# Where kitty looks (may hold symlinks into a dotfiles repo).
+WALLDIR="$(dirname "$CONF")/wallpapers"
+# Where new images should be stored. When kitty.conf is a symlink into a
+# dotfiles repo this resolves to the repo, so --add stays version-controlled
+# instead of dropping an untracked file next to the symlinks.
+STOREDIR="$(dirname "$(readlink -f "$CONF")")/wallpapers"
+SYSDIR=/usr/share/wallpapers
+
+current() { grep -oP '(?<=^background_image)\s+\K\S+' "$LOCALCONF" 2>/dev/null || echo none; }
+
+# largest image inside a directory tree, by measured width
+largest() {
+  find -L "$1" -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.webp' -o -iname '*.jxl' \) 2>/dev/null \
+    | while read -r f; do echo "$(identify -format '%w' "$f" 2>/dev/null || echo 0) $f"; done \
+    | sort -rn | head -1 | cut -d' ' -f2-
+}
+
+apply() {  # $1 = value to write into local.conf
+  [ -f "$LOCALCONF" ] || printf '# Machine-specific kitty overrides. Not tracked by git.\n' > "$LOCALCONF"
+  if grep -q '^background_image ' "$LOCALCONF"; then
+    sed -i --follow-symlinks "s|^background_image .*|background_image $1|" "$LOCALCONF"
+  else
+    printf 'background_image %s\n' "$1" >> "$LOCALCONF"
+  fi
+  pkill -USR1 -x kitty 2>/dev/null || true
+  echo "background_image = $1"
+  echo "(ctrl+shift+f5 in kitty if it did not refresh)"
+}
+
+if [ $# -eq 0 ]; then
+  echo "Current: $(current)"
+  if [ -d "$WALLDIR" ]; then
+    echo; echo "In repo ($WALLDIR):"
+    find -L "$WALLDIR" -maxdepth 1 -type f \( -iname '*.png' -o -iname '*.jpg' -o -iname '*.webp' \) -printf '  %f\n' 2>/dev/null | sort
+  fi
+  if [ -d "$SYSDIR" ]; then
+    echo; echo "System sets ($SYSDIR):"
+    ls "$SYSDIR" | column -c 76 2>/dev/null || ls "$SYSDIR"
+  fi
+  exit 0
+fi
+
+if [ "$1" = "--add" ] || [ "$1" = "--add-small" ]; then
+  [ -f "${2:-}" ] || { echo "usage: kitty-bg --add|--add-small <file>"; exit 1; }
+  mkdir -p "$STOREDIR"
+  # WebP q92: kitty reads it natively, ~6x smaller than PNG at the same
+  # resolution, and the error (1-4 levels of 255) is far below what is
+  # visible through background_tint.
+  name="$(basename "${2%.*}").webp"
+  if [ -e "$STOREDIR/$name" ]; then
+    # Overwriting means git keeps both blobs forever — refuse and let the
+    # user choose a new name instead.
+    echo "already exists: $STOREDIR/$name"
+    echo "pick a different name; wallpapers are append-only so history stays small"
+    exit 1
+  fi
+  if [ "$1" = "--add-small" ]; then
+    # only shrinks; the '>' suffix leaves smaller images alone
+    magick "$2" -resize '2560x1440>' -alpha off -strip -quality 92 "$STOREDIR/$name"
+  else
+    # full resolution, alpha dropped (opaque alpha is 4 bytes/pixel of nothing)
+    magick "$2" -alpha off -strip -quality 92 "$STOREDIR/$name"
+  fi
+  # Link it into the live config dir if that is separate from the store.
+  if [ "$STOREDIR" != "$WALLDIR" ] && [ ! -e "$WALLDIR/$name" ]; then
+    mkdir -p "$WALLDIR"
+    ln -s "$STOREDIR/$name" "$WALLDIR/$name"
+  fi
+  echo "added: $STOREDIR/$name ($(identify -format '%wx%h' "$STOREDIR/$name"))"
+  apply "wallpapers/$name"; exit 0
+fi
+
+case "$1" in
+  none)
+    sed -i --follow-symlinks '/^background_image /d' "$LOCALCONF" 2>/dev/null
+    pkill -USR1 -x kitty 2>/dev/null || true
+    echo "background image removed"; exit 0 ;;
+esac
+
+# 1. a file path
+if [ -f "$1" ]; then apply "$(realpath "$1")"; exit 0; fi
+# 2. a name in the repo wallpapers dir -> relative, portable
+for ext in png jpg jpeg webp; do
+  if [ -f "$WALLDIR/$1.$ext" ]; then apply "wallpapers/$1.$ext"; exit 0; fi
+done
+if [ -f "$WALLDIR/$1" ]; then apply "wallpapers/$1"; exit 0; fi
+# 3. a KDE wallpaper set
+if [ -d "$SYSDIR/$1" ]; then
+  img="$(largest "$SYSDIR/$1")"
+  [ -n "$img" ] && { apply "$img"; exit 0; }
+  echo "no images found in $SYSDIR/$1"; exit 1
+fi
+
+echo "not found: $1"
+echo "run 'kitty-bg' with no arguments to list what is available"
+exit 1

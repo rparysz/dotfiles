@@ -1,0 +1,14 @@
+# Portable git config. Identity lives in ~/.gitconfig.local so a work machine
+# can use a different name/email without diverging from this repo.
+[init]
+	defaultBranch = main
+[core]
+	editor = nvim
+[pull]
+	rebase = true
+[push]
+	autoSetupRemote = true
+[diff]
+	algorithm = histogram
+[include]
+	path = ~/.gitconfig.local

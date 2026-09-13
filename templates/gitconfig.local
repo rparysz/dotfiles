@@ -1,0 +1,4 @@
+# Identity for this machine. Not tracked by git.
+[user]
+	name = YOUR NAME
+	email = you@example.com

@@ -1,0 +1,13 @@
+# Machine-specific shell config. Not tracked by git.
+#
+# Helpers available from .bashrc:
+#   path_prepend <dir>   put first (user tools)
+#   path_append  <dir>   put last  (toolchains that bundle their own cmake/ninja)
+#   path_demote  <pfx>   move entries starting with <pfx> to the end — useful
+#                        when a script in /etc/profile.d prepends a toolchain
+#                        ahead of /usr/bin
+#
+# Example:
+#   path_append /opt/st/stm32cubeclt/GNU-tools-for-STM32/bin
+#   path_demote /opt/st
+#   export STM32CubeMX_PATH="$HOME/STM32CubeMX"

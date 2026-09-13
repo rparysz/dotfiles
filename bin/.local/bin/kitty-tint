@@ -1,0 +1,24 @@
+#!/bin/bash
+# Adjust kitty's background_tint. Higher = image more washed out by the
+# terminal background colour (more readable). Range 0.0 - 1.0.
+#   kitty-tint          show current
+#   kitty-tint 0.96     set absolute
+#   kitty-tint +0.02    step up    (less image)
+#   kitty-tint -0.02    step down  (more image)
+CONF=~/.config/kitty/kitty.conf
+cur=$(grep -oP '(?<=^background_tint)\s+\K[0-9.]+' "$CONF" 2>/dev/null | head -1)
+cur=${cur:-0.9}
+
+if [ -z "$1" ]; then echo "background_tint = $cur"; exit 0; fi
+
+case "$1" in
+  +*|-*) new=$(awk -v c="$cur" -v d="$1" 'BEGIN{printf "%.2f", c+d}') ;;
+  *)     new=$(awk -v v="$1" 'BEGIN{printf "%.2f", v}') ;;
+esac
+# clamp to [0,1]
+new=$(awk -v n="$new" 'BEGIN{if(n<0)n=0; if(n>1)n=1; printf "%.2f", n}')
+
+sed -i --follow-symlinks -E "s|^(background_tint)[[:space:]]+[0-9.]+|\1         $new|" "$CONF"
+# kitty reloads its config on SIGUSR1 — no remote control needed
+pkill -USR1 -x kitty 2>/dev/null
+echo "background_tint = $new"

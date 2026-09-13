@@ -1,0 +1,19 @@
+# Secrets and machine-local state — never commit
+.config/gh/
+.ssh/
+*.pem
+*.key
+netrc
+*.bak
+
+# Machine-specific files live outside the repo; these patterns exist to
+# catch them if they are ever copied in by mistake.
+.bashrc.local
+.gitconfig.local
+local.conf
+
+# Wallpapers are machine-local: large binaries, and downloaded images
+# generally carry no redistribution rights. Fetch fresh ones per machine
+# with `kitty-bg --add`. The active image is set in kitty's local.conf.
+kitty/.config/kitty/wallpapers/*
+!kitty/.config/kitty/wallpapers/README.md

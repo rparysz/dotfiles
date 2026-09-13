@@ -1,0 +1,128 @@
+#!/bin/bash
+# Serve a repo's markdown as browsable HTML (markserv), links between files
+# resolve properly — unlike nvim's single-file preview.
+#   mdview              serve the current git repo (or cwd if not in one)
+#   mdview path/to/dir  serve that directory
+#   mdview -c           serve cwd even when inside a repo
+#   mdview -d           force the dark theme (default: follow the browser)
+#   mdview -n           don't open a browser
+#   mdview -l           list running servers
+#   mdview -k           stop all servers
+# Each invocation grabs its own port, so several repos can run at once.
+set -euo pipefail
+
+RUN="${XDG_RUNTIME_DIR:-/tmp}/mdview"
+BASE_PORT=8642
+OPEN=1
+FORCE_CWD=0
+
+die() { echo "mdview: $*" >&2; exit 1; }
+
+list() {
+  local f pid port dir found=0
+  for f in "$RUN"/*.pid; do
+    [ -e "$f" ] || continue
+    { read -r pid; read -r port; read -r dir; } < "$f"
+    if kill -0 "$pid" 2>/dev/null; then
+      printf '  %-6s http://localhost:%-6s %s\n' "$pid" "$port" "$dir"; found=1
+    else
+      rm -f "$f"   # stale: process died without cleaning up
+    fi
+  done
+  [ "$found" = 1 ] || echo "  no servers running"
+}
+
+stop_all() {
+  local f pid rest n=0
+  for f in "$RUN"/*.pid; do
+    [ -e "$f" ] || continue
+    read -r pid < "$f"
+    kill "$pid" 2>/dev/null && n=$((n+1))
+    rm -f "$f"
+  done
+  echo "stopped $n"
+}
+
+# First free port at or above $1. markserv also needs a livereload port, so
+# step in pairs and check both.
+free_port() {
+  local p=$1
+  while ss -ltnH "( sport = :$p or sport = :$((p+1000)) )" | grep -q .; do
+    p=$((p+1))
+    [ "$p" -gt $((BASE_PORT+50)) ] && die "no free port near $BASE_PORT"
+  done
+  echo "$p"
+}
+
+mkdir -p "$RUN"
+
+while [ $# -gt 0 ]; do
+  case "$1" in
+    -c) FORCE_CWD=1; shift ;;
+    -d) export MDVIEW_THEME=dark; shift ;;
+    -n) OPEN=0; shift ;;
+    -l) list; exit 0 ;;
+    -k) stop_all; exit 0 ;;
+    -h|--help) sed -n '2,10p' "$0"; exit 0 ;;
+    -*) die "unknown option $1" ;;
+    *) break ;;
+  esac
+done
+
+command -v markserv >/dev/null || die "markserv not found — npm install -g markserv"
+
+# Teaches highlight.js the fence names it lacks (```asm). Optional: the server
+# runs fine without it, those blocks just render unhighlighted.
+SHIM="$(dirname "$(dirname "$(realpath "$0")")")/lib/mdview/preload.js"
+[ -f "$SHIM" ] || SHIM=""
+
+if [ $# -gt 0 ]; then
+  DIR="$1"
+elif [ "$FORCE_CWD" = 0 ] && DIR=$(git rev-parse --show-toplevel 2>/dev/null); then
+  :
+else
+  DIR="$PWD"
+fi
+[ -d "$DIR" ] || die "no such directory: $DIR"
+DIR=$(realpath "$DIR")
+
+PORT=$(free_port "$BASE_PORT")
+LRPORT=$((PORT+1000))
+PIDFILE="$RUN/$PORT.pid"
+
+# markserv resolves requests against the process cwd, not its path argument,
+# so cd into the target or every link 404s. Bound to localhost — no auth.
+cd "$DIR"
+NODE_OPTIONS="--no-deprecation${SHIM:+ --require $SHIM}" \
+  markserv --port "$PORT" --livereloadport "$LRPORT" --browser=false --silent "$DIR" &
+PID=$!
+printf '%s\n%s\n%s\n' "$PID" "$PORT" "$DIR" > "$PIDFILE"
+trap 'kill "$PID" 2>/dev/null; rm -f "$PIDFILE"' EXIT INT TERM
+
+for _ in $(seq 30); do
+  curl -sf -o /dev/null "http://localhost:$PORT/" && break
+  kill -0 "$PID" 2>/dev/null || die "markserv exited on startup"
+  sleep 0.2
+done
+
+echo "mdview  http://localhost:$PORT   $DIR"
+echo "        Ctrl+C to stop"
+# Same precedence as open_file() in .bashrc, which scripts cannot source.
+# A URL needs no wslpath translation, so explorer.exe takes it verbatim.
+open_url() {
+  local url="$1"
+  if [ -n "${BROWSER:-}" ] && command -v "$BROWSER" >/dev/null 2>&1; then
+    "$BROWSER" "$url" >/dev/null 2>&1 &
+  elif command -v wslview >/dev/null 2>&1; then
+    wslview "$url" >/dev/null 2>&1 &
+  elif grep -qi microsoft /proc/version 2>/dev/null && command -v explorer.exe >/dev/null 2>&1; then
+    explorer.exe "$url" >/dev/null 2>&1 &
+  elif command -v xdg-open >/dev/null 2>&1; then
+    xdg-open "$url" >/dev/null 2>&1 &
+  else
+    echo "        no opener found — open the URL yourself"
+  fi
+}
+
+if [ "$OPEN" = 1 ]; then open_url "http://localhost:$PORT/" || true; fi
+wait "$PID"

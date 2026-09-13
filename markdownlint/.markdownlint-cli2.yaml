@@ -1,0 +1,41 @@
+# markdownlint-cli2 config. Placed at ~/ so it applies to every markdown file
+# under $HOME unless a project supplies its own closer to the file.
+# Rule reference: https://github.com/DavidAnson/markdownlint/blob/main/doc/Rules.md
+config:
+  # MD013 line-length — prose is soft-wrapped by the editor; hard limits fight
+  # long URLs and table rows for no benefit.
+  MD013: false
+
+  # MD060 table-column-style — requires every pipe to align with the header.
+  # Only satisfiable by padding cells with spaces, which any edit undoes.
+  MD060: false
+
+  # MD033 inline-HTML — needed for <details>, <img width=...>, <br> in READMEs.
+  MD033: false
+
+  # MD041 first-line-heading — notes and fragments legitimately start with
+  # frontmatter or a table.
+  MD041: false
+
+  # MD024 duplicate headings — allow repeats under different parents
+  # (e.g. a "Usage" section per tool).
+  MD024:
+    siblings_only: true
+
+  # MD012 consecutive blank lines — two is a deliberate section break.
+  MD012:
+    maximum: 2
+
+  # MD010 hard tabs — fine inside code blocks (Makefiles, Go).
+  MD010:
+    code_blocks: false
+
+  # MD029 ordered list numbering — allow both 1./1./1. and 1./2./3.
+  MD029:
+    style: one_or_ordered
+
+  # MD046 code-block-style — pin to fenced. Left to infer, the rule adopts
+  # whatever the file's first block uses, so one indented block quoting an
+  # error message marks every real fence in the file as an error.
+  MD046:
+    style: fenced
