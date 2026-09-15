@@ -22,6 +22,11 @@ config.default_domain = 'WSL:Ubuntu'
 config.font = wezterm.font 'JetBrainsMono Nerd Font'
 config.font_size = 11.0
 
+-- Disable font ligatures: JetBrains Mono Nerd Font combines sequences like
+-- `!=`, `->`, `==` into single glyphs (≠, →, etc.) via OpenType calt/liga
+-- features, which WezTerm applies by default. This keeps characters literal.
+config.harfbuzz_features = { 'calt=0', 'clig=0', 'liga=0' }
+
 config.color_scheme = 'Visual Studio Dark+'
 config.enable_scroll_bar = false
 config.hide_tab_bar_if_only_one_tab = true
