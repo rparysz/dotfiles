@@ -3,6 +3,8 @@ padding = { x = 6, y = 6 }
 dynamic_padding = true
 
 [font]
+# No ligature switch needed: alacritty does not shape them, so != always
+# renders as two characters. kitty/wezterm need it turned off explicitly.
 size = 11.0
 normal = { family = "JetBrainsMono Nerd Font", style = "Regular" }
 bold   = { family = "JetBrainsMono Nerd Font", style = "Bold" }
