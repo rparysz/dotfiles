@@ -5,8 +5,7 @@ absolute paths, no hostnames, no machine-specific toolchains. Per-machine settin
 in untracked `*.local` files that the installer seeds from `templates/`.
 
 New machine? See **[SETUP.md](SETUP.md)**. Windows/WSL? See
-**[docs/wezterm-wsl-setup.md](docs/wezterm-wsl-setup.md)**. Cloning this private repo from
-another machine? See **[docs/work-machine-access.md](docs/work-machine-access.md)**.
+**[docs/wezterm-wsl-setup.md](docs/wezterm-wsl-setup.md)**.
 Browsing a repo's markdown in a browser? See **[docs/mdview.md](docs/mdview.md)**.
 
 ## Layout
@@ -32,7 +31,7 @@ Terminal-specific: `kitty` + `bin` (kitty only), `wezterm` (Windows/WSL only).
 ## Install
 
 ```bash
-git clone git@github.com:erespebrn/dotfiles.git ~/dotfiles
+git clone git@github.com:rparysz/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 ./install.sh -n          # preview
 ./install.sh             # link everything

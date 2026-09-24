@@ -174,8 +174,7 @@ Clone the dotfiles repo inside WSL and stow the relevant packages:
 
 ```bash
 sudo apt update && sudo apt install -y stow git
-git clone git@github-dotfiles:erespebrn/dotfiles.git ~/dotfiles
-# (host alias + deploy key: see docs/work-machine-access.md)
+git clone git@github.com:rparysz/dotfiles.git ~/dotfiles
 cd ~/dotfiles && ./install.sh nvim tmux bash git
 ```
 

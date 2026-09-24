@@ -58,7 +58,7 @@ fc-list : family | tr ',' '\n' | grep -i 'JetBrainsMono Nerd Font' | sort -u
 ## 3. Dotfiles
 
 ```bash
-git clone git@github.com:erespebrn/dotfiles.git ~/dotfiles
+git clone git@github.com:rparysz/dotfiles.git ~/dotfiles
 cd ~/dotfiles
 ./install.sh -n      # preview
 ./install.sh         # link
